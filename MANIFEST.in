@@ -1,0 +1,2 @@
+recursive-include src/webrelay/server/templates *
+recursive-include src/webrelay/server/static *

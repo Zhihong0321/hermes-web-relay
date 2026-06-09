@@ -47,5 +47,5 @@ where = ["src"]
 include = ["webrelay*"]
 
 [tool.setuptools.package-data]
-"webrelay.server.templates" = ["*.html", "*.j2", "*.gitkeep"]
-"webrelay.server.static" = ["*.css", "*.js", "*.json", "*.gitkeep"]
+"webrelay.server.templates" = ["*.html", "*.j2", "*.gitkeep", "*/*.html", "*/*.j2", "*/*.gitkeep"]
+"webrelay.server.static" = ["*.css", "*.js", "*.json", "*.gitkeep", "*/*.css", "*/*.js", "*/*.json", "*/*.gitkeep"]
