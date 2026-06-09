@@ -187,23 +187,25 @@ def run() -> int:
     py_executable = sys.executable
 
     if os_name == "windows":
-        print("Configuring Windows Scheduled Task...")
-        cmd_args = [
-            "schtasks", "/create",
-            "/tn", TASK_NAME_WIN,
-            "/tr", f'"{py_executable}" -m webrelay.agent run',
-            "/sc", "ONLOGON",
-            "/f"
-        ]
-        res = subprocess.run(cmd_args, capture_output=True, text=True)
-        if res.returncode != 0:
-            print(f"Error configuring Windows Scheduled Task: {res.stderr}")
-            return res.returncode
-        print("Windows Scheduled Task configured successfully.")
-        
-        # Start immediately
-        print("Starting task immediately...")
-        subprocess.run(["schtasks", "/run", "/tn", TASK_NAME_WIN], capture_output=True)
+        print("Configuring Windows Startup folder batch file...")
+        startup_dir = Path(os.environ["APPDATA"]) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
+        bat_path = startup_dir / "hermes-web-relay-agent.bat"
+        bat_content = f'@echo off\nstart /b "" "{py_executable}" -m webrelay.agent run\n'
+        try:
+            startup_dir.mkdir(parents=True, exist_ok=True)
+            bat_path.write_text(bat_content, encoding="utf-8")
+            print("Windows Startup folder batch file configured successfully.")
+            
+            # Start immediately in background
+            print("Starting agent immediately in background...")
+            subprocess.Popen(
+                [py_executable, "-m", "webrelay.agent", "run"],
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
+            print("Agent started.")
+        except Exception as exc:
+            print(f"Error configuring Windows Startup folder batch file: {exc}")
+            return 1
 
     elif os_name == "darwin":
         print("Configuring macOS LaunchAgent...")
@@ -308,12 +310,17 @@ def uninstall() -> int:
     os_name = platform.system().lower()
 
     if os_name == "windows":
-        print("Deleting Windows Scheduled Task...")
-        res = subprocess.run(["schtasks", "/delete", "/tn", TASK_NAME_WIN, "/f"], capture_output=True, text=True)
-        if res.returncode == 0:
-            print("Windows Scheduled Task deleted successfully.")
+        print("Deleting Windows Startup folder batch file...")
+        startup_dir = Path(os.environ["APPDATA"]) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
+        bat_path = startup_dir / "hermes-web-relay-agent.bat"
+        if bat_path.exists():
+            try:
+                bat_path.unlink()
+                print("Windows Startup folder batch file deleted successfully.")
+            except Exception as exc:
+                print(f"Error deleting batch file: {exc}")
         else:
-            print(f"Note: Scheduled task delete returned code {res.returncode}. (It might not have been registered.)")
+            print("Windows Startup folder batch file not found.")
 
     elif os_name == "darwin":
         print("Deleting macOS LaunchAgent...")

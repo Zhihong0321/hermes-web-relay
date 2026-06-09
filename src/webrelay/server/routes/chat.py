@@ -133,7 +133,7 @@ async def chat_post(
             f'  Error: Local agent is disconnected.'
             f'</div>'
         )
-        return HTMLResponse(user_bubble_html)
+        return HTMLResponse(user_bubble_html, headers={"X-Agent-Disconnected": "true"})
 
     # Return only the user message bubble to be appended by HTMX
     user_bubble_html = (

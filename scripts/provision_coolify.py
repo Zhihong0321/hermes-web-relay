@@ -418,14 +418,14 @@ async def cmd_cleanup(
 def _build_envs(
     *,
     relay_token: str,
+    password: str,
+    session_secret: str,
     db_path: str = "/data/webrelay.db",
 ) -> list[dict[str, Any]]:
     """Compose the four env vars the relay server expects."""
-    password = secrets.token_urlsafe(24)
-    session_secret = secrets.token_hex(32)
     return [
         {
-            "key": "WEBRELAY_PASSWORD",
+            "key": "WEBRELAY_ADMIN_PASS",
             "value": password,
             "is_preview": False,
             "is_buildtime": False,
@@ -555,7 +555,13 @@ async def cmd_provision(
     fqdn = created.get("domains") or created.get("fqdn") or fqdn or ""
 
     relay_token = _make_relay_token()
-    envs = _build_envs(relay_token=relay_token)
+    admin_password = secrets.token_urlsafe(24)
+    session_secret = secrets.token_hex(32)
+    envs = _build_envs(
+        relay_token=relay_token,
+        password=admin_password,
+        session_secret=session_secret
+    )
     await client.set_envs_bulk(app_uuid, envs)
 
     sys.stdout.write(
@@ -571,6 +577,12 @@ async def cmd_provision(
         f" bearer: {relay_token}\n"
         f" token_hash: {_hash_token(relay_token)}\n"
         "======================================================\n"
+    )
+    sys.stdout.write(
+        "\n=== WEB UI CREDENTIALS ===\n"
+        " Username: admin\n"
+        f" Password: {admin_password}\n"
+        "===========================\n"
     )
     state_dir = Path(os.environ.get("HERMES_PROVISION_STATE", "/tmp"))
     state_path = state_dir / "hermes_provision_state.json"

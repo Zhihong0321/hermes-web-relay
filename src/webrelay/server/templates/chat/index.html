@@ -306,6 +306,12 @@
       input.value = "";
       scrollToBottom();
       
+      // If agent is disconnected (server sent custom header), do not start streaming
+      const xhr = event.detail.xhr;
+      if (xhr && xhr.getResponseHeader("X-Agent-Disconnected") === "true") {
+        return;
+      }
+
       // Start EventSource stream connection
       startStreaming("{{ active_thread_id }}");
     }
