@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Files - Hermes Relay{% endblock %}
+
+{% block content %}
+<div class="px-3 py-3 max-w-3xl mx-auto" data-tab-content="files">
+
+  {# -------------------------------------------------------------- #}
+  {# Page header                                                    #}
+  {# -------------------------------------------------------------- #}
+  <div class="flex items-center justify-between mb-3">
+    <h1 class="text-lg font-semibold text-zinc-100">Files</h1>
+    <span class="text-xs text-zinc-500 font-mono break-all">
+      {{ path or "/" }}
+    </span>
+  </div>
+
+  {# -------------------------------------------------------------- #}
+  {# Breadcrumb — clicking a segment navigates via HTMX              #}
+  {# -------------------------------------------------------------- #}
+  <nav class="text-sm font-mono text-zinc-400 mb-3 break-all" aria-label="Breadcrumb">
+    {% set ns = namespace(prev="/files", accumulated="") %}
+    {% for label, href in breadcrumbs %}
+      {% if not loop.first %}
+        <span class="mx-1 text-zinc-600">/</span>
+      {% endif %}
+      <a
+        class="text-indigo-300 hover:text-indigo-200"
+        hx-get="{{ href }}"
+        hx-target="#file-table"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+      >{{ label }}</a>
+    {% endfor %}
+  </nav>
+
+  {# -------------------------------------------------------------- #}
+  {# Top-level error banner (only when set)                          #}
+  {# -------------------------------------------------------------- #}
+  {% if error %}
+    <div class="mb-3 px-3 py-2 rounded bg-rose-900/40 border border-rose-800 text-rose-200 text-sm">
+      {{ error }}
+    </div>
+  {% endif %}
+
+  {# -------------------------------------------------------------- #}
+  {# Listing area (swapped via HTMX when the user clicks a folder)  #}
+  {# -------------------------------------------------------------- #}
+  <section
+    id="file-table"
+    class="rounded border border-zinc-800 bg-zinc-950/40"
+    {% if table_html %}
+      hx-get="/files/list?path={{ path|urlencode }}"
+      hx-trigger="load"
+      hx-swap="innerHTML"
+    {% endif %}
+  >
+    {% if table_html %}
+      {{ table_html|safe }}
+    {% else %}
+      <div
+        class="px-3 py-3 text-zinc-500 text-sm italic"
+        hx-get="/files/list?path={{ path|urlencode }}"
+        hx-trigger="load"
+        hx-swap="innerHTML"
+      >loading...</div>
+    {% endif %}
+  </section>
+
+  {# -------------------------------------------------------------- #}
+  {# File viewer area (swapped via HTMX when the user clicks a file) #}
+  {# -------------------------------------------------------------- #}
+  <section id="file-viewer" class="mt-3">
+    {% if viewer_html %}
+      {{ viewer_html|safe }}
+    {% endif %}
+  </section>
+
+  <p class="mt-4 text-[11px] text-zinc-600 leading-relaxed">
+    Read-only browser. Sandboxed to <code class="text-zinc-400">E:/hermes-agent</code>;
+    the local agent re-validates every request. Path-traversal attempts
+    are refused at the route layer with a 400.
+  </p>
+
+</div>
+{% endblock %}

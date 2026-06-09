@@ -1,0 +1,305 @@
+/* ----------------------------------------------------------------------
+ * Hermes Relay — dark, mobile-first app shell.
+ *
+ * Tailwind handles the bulk of utility styling in templates. This file
+ * covers the few rules that don't fit inline classes:
+ *   - global resets & safe-area for the iPhone home-bar
+ *   - bottom-nav height + tap-target floor
+ *   - chat bubble variants (user / assistant)
+ *   - small motion / focus polish
+ * ---------------------------------------------------------------------- */
+
+:root {
+  --color-bg: #0a0a0a;        /* zinc-950 */
+  --color-surface: #18181b;   /* zinc-900 */
+  --color-surface-2: #27272a; /* zinc-800 */
+  --color-text: #f4f4f5;      /* zinc-100 */
+  --color-muted: #a1a1aa;     /* zinc-400 */
+  --color-accent: #6366f1;    /* indigo-500 */
+  --color-accent-strong: #4f46e5; /* indigo-600 */
+  --color-user-bubble: #4338ca; /* indigo-700 */
+  --bottom-nav-h: 56px;
+}
+
+html, body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  /* iOS: prevent rubber-banding showing the white default background. */
+  overscroll-behavior-y: none;
+}
+
+body {
+  /* Lock the page chrome so the scrollable area is the only place that scrolls. */
+  height: 100vh;
+  height: 100dvh;
+  width: 100%;
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji",
+               sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ----------------------------------------------------------------------
+ * Bottom nav
+ * ---------------------------------------------------------------------- */
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  align-items: stretch;
+  height: var(--bottom-nav-h);
+  padding-bottom: env(safe-area-inset-bottom);
+  /* Effective height grows past 56px on notched phones, not the other way around. */
+  min-height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
+  background: rgba(24, 24, 27, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid #27272a; /* zinc-800 */
+}
+
+.bottom-nav a {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  text-decoration: none;
+  /* Tap-target floor — never below 44pt iOS HIG / WCAG. */
+  min-height: 44px;
+  padding: 4px 2px;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.bottom-nav a:hover,
+.bottom-nav a:focus-visible {
+  color: var(--color-text);
+  background-color: rgba(63, 63, 70, 0.4); /* zinc-700/40 */
+  outline: none;
+}
+
+.bottom-nav a[aria-current="page"] {
+  color: var(--color-accent);
+}
+
+.bottom-nav a[aria-current="page"] svg {
+  filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.6));
+}
+
+.bottom-nav .label {
+  font-size: 10px;
+  font-weight: 500;
+  margin-top: 2px;
+  line-height: 1;
+}
+
+/* ----------------------------------------------------------------------
+ * Top app-bar safe-area
+ * ---------------------------------------------------------------------- */
+
+.app-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  height: 56px;
+  padding-top: env(safe-area-inset-top);
+  /* Compensate the padding so visible content area stays 56px. */
+  min-height: calc(56px + env(safe-area-inset-top));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  background: rgba(24, 24, 27, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid #27272a;
+}
+
+.app-bar .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid #27272a;
+  background-color: #27272a;
+  color: #a1a1aa;
+}
+
+.app-bar .badge .dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 9999px;
+  background-color: #71717a; /* zinc-500 */
+}
+
+.app-bar .badge.is-connected {
+  background-color: rgba(20, 83, 45, 0.4);  /* green-900/40 */
+  color: #86efac;                            /* green-300 */
+  border-color: rgba(22, 101, 52, 0.6);
+}
+
+.app-bar .badge.is-connected .dot {
+  background-color: #22c55e; /* green-500 */
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+
+.app-bar .badge.is-disconnected {
+  background-color: rgba(127, 29, 29, 0.4); /* red-900/40 */
+  color: #fca5a5;                            /* red-300 */
+  border-color: rgba(159, 18, 57, 0.6);
+}
+
+.app-bar .badge.is-disconnected .dot {
+  background-color: #ef4444; /* red-500 */
+}
+
+/* ----------------------------------------------------------------------
+ * Main scrollable area
+ * ---------------------------------------------------------------------- */
+
+main.content {
+  padding-top: calc(56px + env(safe-area-inset-top));
+  /* Bottom nav height + iPhone home-bar. */
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ----------------------------------------------------------------------
+ * Chat bubbles
+ * ---------------------------------------------------------------------- */
+
+.chat-bubble {
+  max-width: 85%;
+  padding: 0.625rem 0.875rem;
+  border-radius: 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  margin: 0.25rem 0;
+}
+
+.chat-bubble.user {
+  align-self: flex-end;
+  background-color: var(--color-user-bubble);
+  color: #f5f3ff;            /* indigo-50 */
+  border-bottom-right-radius: 0.375rem;
+}
+
+.chat-bubble.assistant {
+  align-self: flex-start;
+  background-color: #27272a;  /* zinc-800 */
+  color: #f4f4f5;            /* zinc-100 */
+  border-bottom-left-radius: 0.375rem;
+  border: 1px solid #3f3f46; /* zinc-700 */
+}
+
+.chat-bubble.system {
+  align-self: center;
+  background-color: transparent;
+  color: #a1a1aa;
+  font-size: 0.75rem;
+  font-style: italic;
+  padding: 0.25rem 0.5rem;
+}
+
+.chat-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+}
+
+/* ----------------------------------------------------------------------
+ * Approvals badge (in the bottom-nav)
+ * ---------------------------------------------------------------------- */
+
+.nav-badge {
+  position: absolute;
+  top: 4px;
+  /* Sit on the right edge of the tab so it doesn't overlap the label. */
+  margin-left: 14px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  background-color: var(--color-accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 0 0 2px #18181b; /* zinc-900 ring to lift off the tab */
+}
+
+.nav-badge[data-count="0"],
+.nav-badge:empty {
+  display: none;
+}
+
+/* ----------------------------------------------------------------------
+ * Forms / inputs — dark defaults
+ * ---------------------------------------------------------------------- */
+
+textarea, input[type="text"], input[type="search"], input[type="password"] {
+  background-color: #18181b;
+  color: var(--color-text);
+  border: 1px solid #3f3f46;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  width: 100%;
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+textarea:focus, input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+button.primary, .btn-primary {
+  background-color: var(--color-accent);
+  color: white;
+  font-weight: 600;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  min-height: 44px;
+  transition: background-color 120ms ease, transform 80ms ease;
+}
+
+button.primary:hover, .btn-primary:hover {
+  background-color: var(--color-accent-strong);
+}
+
+button.primary:active, .btn-primary:active {
+  transform: translateY(1px);
+}
+
+/* ----------------------------------------------------------------------
+ * Motion preferences
+ * ---------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}

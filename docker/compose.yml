@@ -1,0 +1,37 @@
+# LOCAL DEV ONLY.
+# Coolify deploys via the Dockerfile and its own env-var mgmt; this compose
+# is for local testing only.
+#
+# Usage:
+#   cd E:/hermes-agent/web-relay
+#   cp .env.example .env   # then edit secrets
+#   docker compose -f docker/compose.yml up --build
+#
+# Production secrets, persistent volumes, and TLS termination are all
+# handled by Coolify — do not use this compose in production.
+
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: webrelay-server:dev
+    container_name: webrelay-server
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - webrelay-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; \
+        sys.exit(0) if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2).status == 200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  webrelay-data:
+    name: webrelay-data

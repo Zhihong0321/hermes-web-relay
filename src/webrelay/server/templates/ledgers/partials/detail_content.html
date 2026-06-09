@@ -1,0 +1,33 @@
+<div id="ledger-content" 
+     hx-get="/ledgers/{{ ledger.ledger_id }}" 
+     hx-trigger="every 5s" 
+     hx-swap="outerHTML" 
+     class="space-y-4">
+
+  <!-- Metadata Bar -->
+  <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl text-xs">
+    <div class="flex items-center gap-2 font-mono text-zinc-400">
+      <span class="text-zinc-500">File:</span>
+      <span>{{ ledger.filename }}</span>
+    </div>
+    
+    <div class="flex items-center gap-4 text-zinc-500 font-mono">
+      <div>
+        <span>Status:</span>
+        <span class="font-semibold {% if ledger.status == 'in_progress' or ledger.status == 'active' %} text-emerald-400 {% else %} text-zinc-400 {% endif %}">
+          {{ ledger.status|upper }}
+        </span>
+      </div>
+      <div>
+        <span>Updated:</span>
+        <span>{{ ledger.updated_at.strftime("%H:%M:%S") }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Block -->
+  <div class="relative">
+    <pre class="font-mono text-xs leading-relaxed whitespace-pre-wrap break-all overflow-x-auto p-5 bg-zinc-950 border border-zinc-800/80 rounded-2xl text-zinc-300 shadow-inner">{{ ledger.content }}</pre>
+  </div>
+
+</div>

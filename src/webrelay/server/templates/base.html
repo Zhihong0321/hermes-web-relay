@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hermes">
+  <title>{% block title %}Hermes Relay{% endblock %}</title>
+
+  {# PWA manifest. The 192px icon is referenced here ahead of the asset landing later. #}
+  <link rel="manifest" href="/static/manifest.json">
+
+  {# HTMX 1.9+ from CDN, plus the SSE extension used by the chat stream + ledger feed. #}
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.9.12/dist/htmx.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/htmx-ext-sse@2.2.1/sse.js" defer></script>
+
+  {# Tailwind via CDN. Few customizations; rest uses inline tailwind classes. #}
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="stylesheet" href="/static/app.css">
+  {% block head %}{% endblock %}
+</head>
+
+<body class="bg-zinc-950 text-zinc-100 min-h-screen antialiased selection:bg-indigo-500/30">
+
+  {# -------------------------------------------------------------- #}
+  {# Top app-bar                                                    #}
+  {# -------------------------------------------------------------- #}
+  <header class="fixed top-0 inset-x-0 z-30 h-14 bg-zinc-900/90 backdrop-blur border-b border-zinc-800 flex items-center justify-between px-4"
+          style="padding-top: env(safe-area-inset-top);">
+    <a href="/" class="flex items-center gap-2 text-zinc-100 font-semibold tracking-tight">
+      <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.7)]"></span>
+      Hermes
+    </a>
+
+    {# Connected badge — polled every 5s via htmx. The route returns a fragment with the new badge. #}
+    <div id="relay-status"
+         hx-get="/api/relay/status"
+         hx-trigger="load, every 5s"
+         hx-swap="innerHTML">
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-800 text-zinc-400 border border-zinc-700">
+        <span class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span>
+        <span>checking…</span>
+      </span>
+    </div>
+
+    <a href="/auth/logout"
+       class="text-xs text-zinc-400 hover:text-zinc-100 px-2 py-1 rounded-md hover:bg-zinc-800 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+       aria-label="Log out">
+      Logout
+    </a>
+  </header>
+
+  {# -------------------------------------------------------------- #}
+  {# Main scrollable content area                                   #}
+  {# -------------------------------------------------------------- #}
+  <main id="content"
+        class="pt-14 pb-16 min-h-screen overflow-y-auto"
+        style="padding-bottom: calc(env(safe-area-inset-bottom) + 4rem);">
+    {% block content %}{% endblock %}
+  </main>
+
+  {# -------------------------------------------------------------- #}
+  {# Bottom fixed nav — 4 tabs                                      #}
+  {# -------------------------------------------------------------- #}
+  <nav class="fixed bottom-0 inset-x-0 z-30 h-14 bg-zinc-900/95 backdrop-blur border-t border-zinc-800 flex items-stretch"
+       style="padding-bottom: env(safe-area-inset-bottom); height: calc(3.5rem + env(safe-area-inset-bottom)); min-height: 56px;"
+       aria-label="Primary">
+    <a href="/chat"
+       class="flex-1 flex flex-col items-center justify-center min-h-[44px] text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 active:bg-zinc-800 transition-colors"
+       hx-get="/chat" hx-target="#content" hx-push-url="true"
+       data-tab="chat">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <span class="text-[10px] mt-0.5 font-medium">Chat</span>
+    </a>
+    <a href="/ledgers"
+       class="flex-1 flex flex-col items-center justify-center min-h-[44px] text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 active:bg-zinc-800 transition-colors"
+       hx-get="/ledgers" hx-target="#content" hx-push-url="true"
+       data-tab="ledgers">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 4h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4z"/>
+        <path d="M8 2v4M16 2v4M8 10h8M8 14h8M8 18h5"/>
+      </svg>
+      <span class="text-[10px] mt-0.5 font-medium">Ledgers</span>
+    </a>
+    <a href="/files"
+       class="flex-1 flex flex-col items-center justify-center min-h-[44px] text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 active:bg-zinc-800 transition-colors"
+       hx-get="/files" hx-target="#content" hx-push-url="true"
+       data-tab="files">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+      </svg>
+      <span class="text-[10px] mt-0.5 font-medium">Files</span>
+    </a>
+    <a href="/approvals"
+       class="relative flex-1 flex flex-col items-center justify-center min-h-[44px] text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 active:bg-zinc-800 transition-colors"
+       hx-get="/approvals" hx-target="#content" hx-push-url="true"
+       data-tab="approvals">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 12l2 2 4-4"/>
+        <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/>
+      </svg>
+      <span class="text-[10px] mt-0.5 font-medium">Approvals</span>
+      {# Badge count — hx-get from a sibling route fills it in; empty span is the placeholder. #}
+      <span id="approvals-badge"
+            hx-get="/api/approvals/pending-count"
+            hx-trigger="load, every 10s"
+            hx-swap="innerHTML"
+            class="absolute top-1 right-1/2 translate-x-3 hidden"></span>
+    </a>
+  </nav>
+
+  {% block scripts %}{% endblock %}
+  
+  <script>
+    // Highlight active nav tab based on path
+    function highlightActiveTab() {
+      const path = window.location.pathname;
+      const tabs = document.querySelectorAll('nav[aria-label="Primary"] a[data-tab]');
+      tabs.forEach(tab => {
+        const tabName = tab.getAttribute('data-tab');
+        if (path.startsWith('/' + tabName) || (path === '/' && tabName === 'chat')) {
+          tab.classList.remove('text-zinc-400');
+          tab.classList.add('text-indigo-400', 'text-zinc-100', 'bg-zinc-800/30');
+        } else {
+          tab.classList.add('text-zinc-400');
+          tab.classList.remove('text-indigo-400', 'text-zinc-100', 'bg-zinc-800/30');
+        }
+      });
+    }
+    document.addEventListener('DOMContentLoaded', highlightActiveTab);
+    document.addEventListener('htmx:afterSwap', highlightActiveTab);
+  </script>
+</body>
+</html>

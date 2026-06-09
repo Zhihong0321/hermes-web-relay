@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Ledger: {{ ledger.ledger_id }} - Hermes{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 max-w-4xl mx-auto space-y-6" data-tab-content="ledgers">
+
+  <!-- Back nav -->
+  <div class="flex items-center justify-between">
+    <a href="/ledgers" 
+       hx-get="/ledgers" 
+       hx-target="#content" 
+       hx-push-url="true"
+       class="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-indigo-400 transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      <span>Back to Ledgers</span>
+    </a>
+
+    {% if ledger.chat_thread_id %}
+    <a href="/chat?thread_id={{ ledger.chat_thread_id }}"
+       hx-get="/chat?thread_id={{ ledger.chat_thread_id }}"
+       hx-target="#content"
+       hx-push-url="true"
+       class="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+      <span>View Associated Chat</span>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+        <polyline points="12 5 19 12 12 19"></polyline>
+      </svg>
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Header -->
+  <div>
+    <h1 class="text-xl font-bold tracking-tight text-zinc-100 font-mono">
+      ledger: {{ ledger.ledger_id }}
+    </h1>
+    <p class="text-xs text-zinc-500">Live polling content for this task execution ledger.</p>
+  </div>
+
+  <!-- Polled Content -->
+  {% include "ledgers/partials/detail_content.html" %}
+
+</div>
+{% endblock %}

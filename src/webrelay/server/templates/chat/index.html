@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}Chat - Hermes{% endblock %}
+
+{% block head %}
+<style>
+  /* Custom scrollbar styling for a cleaner look */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(63, 63, 70, 0.4);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(82, 82, 91, 0.6);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex h-[calc(100vh-3.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-w-7xl mx-auto overflow-hidden relative" data-tab-content="chat">
+  
+  {# -------------------------------------------------------------- #}
+  {# Sidebar — Threads list (hidden on mobile by default)           #}
+  {# -------------------------------------------------------------- #}
+  <aside id="chat-sidebar" 
+         class="absolute inset-y-0 left-0 z-20 w-72 bg-zinc-900/95 border-r border-zinc-800/80 p-4 transition-transform duration-300 transform -translate-x-full lg:relative lg:translate-x-0 flex flex-col justify-between">
+    
+    <div class="flex flex-col h-full overflow-hidden">
+      <!-- Sidebar header -->
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-sm font-semibold tracking-wider uppercase text-zinc-400">Conversations</h2>
+        <a href="/chat" 
+           hx-get="/chat" 
+           hx-target="#content" 
+           hx-push-url="true"
+           class="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 hover:text-white transition-colors"
+           aria-label="New chat">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Threads list -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
+        {% for thread in threads %}
+        <a href="/chat?thread_id={{ thread.id }}"
+           hx-get="/chat?thread_id={{ thread.id }}"
+           hx-target="#content"
+           hx-push-url="true"
+           class="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all group font-sans {% if thread.id == active_thread_id %} bg-zinc-800 text-zinc-100 border border-zinc-700/50 {% else %} text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 {% endif %}">
+          <span class="truncate pr-2 font-medium">{{ thread.title or "New Chat" }}</span>
+          <span class="text-[10px] text-zinc-500 flex-shrink-0 group-hover:text-zinc-400 transition-colors">
+            {{ thread.updated_at.strftime("%H:%M") }}
+          </span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </aside>
+
+  <!-- Overlay for mobile sidebar -->
+  <div id="sidebar-overlay" 
+       onclick="toggleSidebar()"
+       class="absolute inset-0 z-10 bg-black/40 backdrop-blur-sm hidden lg:hidden"></div>
+
+  {# -------------------------------------------------------------- #}
+  {# Chat Area                                                      #}
+  {# -------------------------------------------------------------- #}
+  <section class="flex-1 flex flex-col h-full bg-zinc-950 overflow-hidden">
+    <!-- Active thread header -->
+    <header class="h-12 border-b border-zinc-800/80 px-4 flex items-center justify-between bg-zinc-900/30">
+      <div class="flex items-center gap-3">
+        <!-- Sidebar toggle for mobile -->
+        <button onclick="toggleSidebar()" 
+                class="lg:hidden p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <h3 class="text-sm font-semibold text-zinc-200">
+          {% for thread in threads %}{% if thread.id == active_thread_id %}{{ thread.title or "New Chat" }}{% endif %}{% endfor %}
+        </h3>
+      </div>
+      
+      <!-- Thread ID badge -->
+      <span class="text-[10px] font-mono text-zinc-600 truncate max-w-[120px] sm:max-w-none">
+        {{ active_thread_id }}
+      </span>
+    </header>
+
+    <!-- Message Bubbles Container -->
+    <div id="chat-messages" 
+         class="flex-1 overflow-y-auto p-4 custom-scrollbar bg-gradient-to-b from-zinc-950 to-zinc-900/30">
+      {% for msg in messages %}
+      <div class="flex {% if msg.role == 'user' %} justify-end {% else %} justify-start {% endif %} mb-4">
+        <div class="chat-bubble {{ msg.role }} max-w-[75%] rounded-2xl px-4 py-2.5 text-sm shadow-md font-sans leading-relaxed 
+                    {% if msg.role == 'user' %} bg-indigo-600 text-white {% else %} bg-zinc-800 text-zinc-100 {% endif %}">
+          {{ msg.content|safe }}
+          {% if msg.task_ledger_id %}
+          <div class="mt-2 pt-1.5 border-t border-zinc-700/50 text-xs font-mono flex items-center gap-1.5 text-indigo-300">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4z"/>
+              <path d="M9 9h6M9 13h6M9 17h4"/>
+            </svg>
+            <a href="/ledgers/{{ msg.task_ledger_id }}" class="hover:underline">Ledger: {{ msg.task_ledger_id }}</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Input Form -->
+    <footer class="p-4 border-t border-zinc-800/80 bg-zinc-950">
+      <form id="chat-form" 
+            hx-post="/chat?thread_id={{ active_thread_id }}" 
+            hx-target="#chat-messages" 
+            hx-swap="beforeend"
+            hx-on::after-request="handleAfterSend(event)"
+            class="relative flex items-end gap-2 max-w-3xl mx-auto bg-zinc-900/60 border border-zinc-800 rounded-2xl p-2 focus-within:border-indigo-500/50 focus-within:ring-1 focus-within:ring-indigo-500/20 transition-all">
+        
+        <textarea id="chat-input" 
+                  name="text" 
+                  rows="1" 
+                  required
+                  placeholder="Type a message..."
+                  onkeydown="handleKeyDown(event)"
+                  class="flex-1 resize-none bg-transparent outline-none max-h-32 min-h-[2.5rem] py-2 px-3 text-sm text-zinc-100 placeholder-zinc-500 font-sans"></textarea>
+        
+        <button id="chat-submit" 
+                type="submit" 
+                class="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white transition-all shadow-[0_4px_10px_rgba(99,102,241,0.2)]">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transform rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </form>
+    </footer>
+
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let activeEventSource = null;
+
+  // Toggle Sidebar on mobile
+  function toggleSidebar() {
+    const sidebar = document.getElementById('chat-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar.classList.contains('-translate-x-full')) {
+      sidebar.classList.remove('-translate-x-full');
+      overlay.classList.remove('hidden');
+    } else {
+      sidebar.classList.add('-translate-x-full');
+      overlay.classList.add('hidden');
+    }
+  }
+
+  // Scroll to the bottom of the messages list
+  function scrollToBottom() {
+    const container = document.getElementById('chat-messages');
+    container.scrollTop = container.scrollHeight;
+  }
+
+  // Ensure scroll is at bottom on load
+  document.addEventListener('DOMContentLoaded', () => {
+    scrollToBottom();
+  });
+
+  // Handle enter key submit
+  function handleKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      document.getElementById('chat-submit').click();
+    }
+  }
+
+  // Start connection to EventSource stream
+  function startStreaming(threadId) {
+    if (activeEventSource) {
+      activeEventSource.close();
+    }
+
+    // Disable input & submit
+    const input = document.getElementById('chat-input');
+    const submitBtn = document.getElementById('chat-submit');
+    input.disabled = true;
+    submitBtn.disabled = true;
+    submitBtn.classList.add('opacity-50');
+
+    // Scroll to bottom
+    scrollToBottom();
+
+    // Create the assistant bubble placeholder
+    const chatMessages = document.getElementById('chat-messages');
+    const assistantBubble = document.createElement('div');
+    assistantBubble.className = 'flex justify-start mb-4';
+    assistantBubble.id = 'streaming-bubble';
+    assistantBubble.innerHTML = `
+      <div class="chat-bubble assistant max-w-[75%] rounded-2xl px-4 py-2.5 bg-zinc-800 text-zinc-100 text-sm shadow-md font-sans leading-relaxed">
+        <span id="streaming-text" class="flex gap-1.5 items-center h-5">
+          <span class="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce [animation-duration:0.6s]"></span>
+          <span class="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce [animation-duration:0.6s] [animation-delay:0.2s]"></span>
+          <span class="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce [animation-duration:0.6s] [animation-delay:0.4s]"></span>
+        </span>
+      </div>
+    `;
+    chatMessages.appendChild(assistantBubble);
+    scrollToBottom();
+
+    // Open SSE Connection
+    activeEventSource = new EventSource(`/chat/stream/${threadId}`);
+    let accumulatedText = "";
+
+    activeEventSource.addEventListener('chat.token', (e) => {
+      const data = JSON.parse(e.data);
+      const textSpan = document.getElementById('streaming-text');
+      
+      // If typing indicator is still there, replace it with content
+      if (textSpan && textSpan.querySelector('.animate-bounce')) {
+        textSpan.className = "";
+        textSpan.innerHTML = "";
+      }
+      
+      accumulatedText += data.text;
+      if (textSpan) {
+        // Simple HTML replacement, escaping HTML entities
+        textSpan.textContent = accumulatedText;
+      }
+      scrollToBottom();
+    });
+
+    activeEventSource.addEventListener('chat.done', (e) => {
+      const data = JSON.parse(e.data);
+      finalizeStream(data.task_ledger_id);
+    });
+
+    activeEventSource.onerror = (e) => {
+      console.error("SSE stream error", e);
+      finalizeStream(null);
+    };
+  }
+
+  // Cleanup EventSource and re-enable inputs
+  function finalizeStream(taskLedgerId) {
+    if (activeEventSource) {
+      activeEventSource.close();
+      activeEventSource = null;
+    }
+
+    const input = document.getElementById('chat-input');
+    const submitBtn = document.getElementById('chat-submit');
+    input.disabled = false;
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('opacity-50');
+    input.value = "";
+    input.focus();
+
+    // Finalize the streaming bubble structure in DOM
+    const textSpan = document.getElementById('streaming-text');
+    const bubbleDiv = document.getElementById('streaming-bubble');
+    
+    if (textSpan && bubbleDiv) {
+      textSpan.removeAttribute('id');
+      bubbleDiv.removeAttribute('id');
+
+      // Append ledger link if available
+      if (taskLedgerId) {
+        const bubbleInner = bubbleDiv.querySelector('.chat-bubble');
+        if (bubbleInner) {
+          const ledgerDiv = document.createElement('div');
+          ledgerDiv.className = 'mt-2 pt-1.5 border-t border-zinc-700/50 text-xs font-mono flex items-center gap-1.5 text-indigo-300';
+          ledgerDiv.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4z"/>
+              <path d="M9 9h6M9 13h6M9 17h4"/>
+            </svg>
+            <a href="/ledgers/${taskLedgerId}" class="hover:underline">Ledger: ${taskLedgerId}</a>
+          `;
+          bubbleInner.appendChild(ledgerDiv);
+        }
+      }
+    }
+
+    scrollToBottom();
+  }
+
+  // Handle HTMX response after POST completes
+  function handleAfterSend(event) {
+    if (event.detail.successful) {
+      // Clear inputs
+      const input = document.getElementById('chat-input');
+      input.value = "";
+      scrollToBottom();
+      
+      // Start EventSource stream connection
+      startStreaming("{{ active_thread_id }}");
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,66 @@
+# --- Python ------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Virtual envs ------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+.env/
+.envrc
+
+# --- Local config (NEVER commit a real .env) --------------------------------
+.env
+.env.*
+!.env.example
+
+# --- SQLite + workflow artefacts --------------------------------------------
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.workflow-output/
+.workflow/
+
+# --- Pytest + coverage -------------------------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.cache/
+
+# --- Ruff / mypy / IDE -------------------------------------------------------
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# --- Build / packaging -------------------------------------------------------
+pip-wheel-metadata/
+*.log

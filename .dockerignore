@@ -1,0 +1,45 @@
+# VCS / cache / local dev artifacts that must never end up in the
+# build context. The Dockerfile only needs pyproject.toml + src/.
+
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Python
+.venv
+venv
+__pycache__
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info
+.eggs
+build
+dist
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Database / secrets — never bake into an image
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.*
+!.env.example
+
+# Tests / CI
+tests/
+pytest.ini
+ruff.toml
+htmlcov
+.coverage
+coverage.xml
+
+# Local-only Docker artifacts (Coolify builds the Dockerfile directly)
+docker/compose.yml
+
+# Scratch / agent workflow output
+.workflow-output/
+.claude/

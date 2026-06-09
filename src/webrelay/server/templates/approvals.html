@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{# Approvals page — list of pending sensitive-tool prompts.
+
+   Each card posts its decision via hx-post and self-removes with
+   hx-swap="outerHTML" (the route returns an empty partial). #}
+
+{% block title %}Approvals · Hermes{% endblock %}
+
+{% block content %}
+<section class="approvals">
+    <header class="approvals__header">
+        <h1 class="approvals__title">Pending approvals</h1>
+        <p class="approvals__subtitle" data-testid="pending-count">
+            {{ pending_count }} awaiting your decision
+        </p>
+    </header>
+
+    {% if pending %}
+    <ul class="approvals__list" id="approvals-list" role="list">
+        {% for item in pending %}
+        <li class="approvals__card"
+            id="approval-{{ item.prompt_id }}"
+            data-prompt-id="{{ item.prompt_id }}"
+            data-tool="{{ item.tool_name }}">
+            <div class="approvals__card-head">
+                <span class="approvals__tool">{{ item.tool_name }}</span>
+                <time class="approvals__time"
+                      datetime="{{ item.requested_at.isoformat() }}">
+                    {{ item.requested_at.strftime("%H:%M:%S") }}
+                </time>
+            </div>
+
+            {% if item.command %}
+            <pre class="approvals__command"><code>{{ item.command }}</code></pre>
+            {% endif %}
+
+            {% if item.context %}
+            <p class="approvals__context">{{ item.context }}</p>
+            {% endif %}
+
+            <form class="approvals__actions"
+                  hx-post="/approvals/{{ item.prompt_id }}/decision"
+                  hx-swap="outerHTML"
+                  hx-target="#approval-{{ item.prompt_id }}"
+                  hx-ext="json-enc"
+                  hx-trigger="submit">
+                <input type="hidden" name="reason" value="" />
+                <button type="submit"
+                        name="decision"
+                        value="allow"
+                        class="approvals__btn approvals__btn--allow"
+                        aria-label="Allow {{ item.tool_name }}">
+                    <span class="approvals__btn-icon" aria-hidden="true">&#10003;</span>
+                    <span class="approvals__btn-label">Allow</span>
+                </button>
+                <button type="submit"
+                        name="decision"
+                        value="deny"
+                        class="approvals__btn approvals__btn--deny"
+                        aria-label="Deny {{ item.tool_name }}">
+                    <span class="approvals__btn-icon" aria-hidden="true">&times;</span>
+                    <span class="approvals__btn-label">Deny</span>
+                </button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="approvals__empty" data-testid="approvals-empty">
+        <p class="approvals__empty-title">No pending approvals</p>
+        <p class="approvals__empty-hint">
+            Sensitive tool calls from the local agent will appear here for
+            your decision.
+        </p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
