@@ -135,6 +135,7 @@ def create_app() -> FastAPI:
     can call it with a different DB path or a stub hub without
     monkey-patching module globals.
     """
+    logging.basicConfig(level=logging.INFO)
     app = FastAPI(
         title="Hermes Web Relay",
         version="0.1.0",

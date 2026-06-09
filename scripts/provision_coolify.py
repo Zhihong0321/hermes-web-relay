@@ -147,6 +147,12 @@ class CoolifyClient:
         data = r.json()
         return data if isinstance(data, list) else []
 
+    async def list_environments(self, project_uuid: str) -> list[dict[str, Any]]:
+        r = await self._client.get(f"/projects/{project_uuid}/environments")
+        r.raise_for_status()
+        data = r.json()
+        return data if isinstance(data, list) else []
+
     async def create_project(self, name: str, description: str = "") -> dict[str, Any]:
         r = await self._client.post(
             "/projects", json={"name": name, "description": description}
@@ -189,7 +195,6 @@ class CoolifyClient:
         git_branch: str,
         build_pack: str,
         ports_mappings: str,
-        fqdn: str,
         name: str = APP_NAME,
     ) -> dict[str, Any]:
         payload = {
@@ -201,7 +206,6 @@ class CoolifyClient:
             "git_branch": git_branch,
             "build_pack": build_pack,
             "ports_mappings": ports_mappings,
-            "fqdn": fqdn,
             "name": name,
         }
         r = await self._client.post("/applications/public", json=payload)
@@ -217,7 +221,6 @@ class CoolifyClient:
         environment_uuid: str,
         docker_registry_image_name: str,
         ports_mappings: str,
-        fqdn: str,
         name: str = APP_NAME,
     ) -> dict[str, Any]:
         payload = {
@@ -227,7 +230,6 @@ class CoolifyClient:
             "environment_uuid": environment_uuid,
             "docker_registry_image_name": docker_registry_image_name,
             "ports_mappings": ports_mappings,
-            "fqdn": fqdn,
             "name": name,
         }
         r = await self._client.post("/applications/dockerimage", json=payload)
@@ -256,7 +258,15 @@ class CoolifyClient:
         r = await self._client.post("/deploy", json={"uuid": app_uuid})
         r.raise_for_status()
         data = r.json()
-        return data if isinstance(data, list) else []
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict) and "deployments" in data:
+            deps = data["deployments"]
+            if isinstance(deps, list) and deps:
+                uuid_ = deps[0].get("deployment_uuid")
+                if uuid_:
+                    return [str(uuid_)]
+        return []
 
     async def deployment_status(self, run_uuid: str) -> dict[str, Any]:
         r = await self._client.get(f"/deployments/{run_uuid}")
@@ -288,9 +298,12 @@ def _project_resource_counts(
     )
 
 
-def _pick_environment(project: dict[str, Any]) -> tuple[str, str] | None:
+async def _pick_environment(client: CoolifyClient, project: dict[str, Any]) -> tuple[str, str] | None:
     """Return ``(name, uuid)`` for the project's first environment, or ``None``."""
-    envs = project.get("environments") or []
+    envs = project.get("environments")
+    if not envs:
+        project_uuid = str(project.get("uuid", ""))
+        envs = await client.list_environments(project_uuid)
     if not envs:
         return None
     first = envs[0]
@@ -486,12 +499,21 @@ async def cmd_provision(
 
     project = await _ensure_project(client, project_name)
     project_uuid = str(project.get("uuid", ""))
-    env = _pick_environment(project)
+    env = await _pick_environment(client, project)
     if env is None:
-        raise SystemExit(
-            f"project {project_name!r} has no environment; create one "
-            "via the Coolify UI or POST /projects/{uuid}/environments."
-        )
+        sys.stdout.write(f"Project '{project_name}' has no environment. Creating 'production'...\n")
+        r = await client.client.post(f"/projects/{project_uuid}/environments", json={"name": "production"})
+        r.raise_for_status()
+        refreshed_projects = await client.list_projects()
+        for p in refreshed_projects:
+            if p.get("uuid") == project_uuid:
+                project = p
+                break
+        env = await _pick_environment(client, project)
+        if env is None:
+            raise SystemExit(
+                f"project {project_name!r} has no environment even after attempting to create one."
+            )
     env_name, env_uuid = env
 
     if not server_uuid:
@@ -513,9 +535,11 @@ async def cmd_provision(
             git_branch=git_branch,
             build_pack="dockerfile",
             ports_mappings=ports_mappings,
-            fqdn=fqdn or "",
             name=APP_NAME,
         )
+        app_uuid = str(created.get("uuid", ""))
+        r = await client.client.patch(f"/applications/{app_uuid}", json={"dockerfile_location": "/docker/Dockerfile"})
+        r.raise_for_status()
     else:
         created = await client.create_dockerimage_app(
             project_uuid=project_uuid,
@@ -524,11 +548,11 @@ async def cmd_provision(
             environment_uuid=env_uuid,
             docker_registry_image_name=docker_image or "",
             ports_mappings=ports_mappings,
-            fqdn=fqdn or "",
             name=APP_NAME,
         )
 
     app_uuid = str(created.get("uuid", ""))
+    fqdn = created.get("domains") or created.get("fqdn") or fqdn or ""
 
     relay_token = _make_relay_token()
     envs = _build_envs(relay_token=relay_token)
