@@ -68,9 +68,9 @@ async def chat_get(
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
+        request,
         "chat/index.html",
         {
-            "request": request,
             "threads": threads,
             "active_thread_id": active_thread.id,
             "messages": messages,

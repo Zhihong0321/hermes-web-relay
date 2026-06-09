@@ -102,13 +102,15 @@ async def ledgers_get(
     templates = request.app.state.templates
     if request.headers.get("HX-Request", "").lower() == "true":
         return templates.TemplateResponse(
+            request,
             "ledgers/partials/list.html",
-            {"request": request, "ledgers": ledgers},
+            {"ledgers": ledgers},
         )
 
     return templates.TemplateResponse(
+        request,
         "ledgers/index.html",
-        {"request": request, "ledgers": ledgers},
+        {"ledgers": ledgers},
     )
 
 
@@ -156,13 +158,15 @@ async def ledger_detail(
     templates = request.app.state.templates
     if request.headers.get("HX-Request", "").lower() == "true":
         return templates.TemplateResponse(
+            request,
             "ledgers/partials/detail_content.html",
-            {"request": request, "ledger": snapshot},
+            {"ledger": snapshot},
         )
 
     return templates.TemplateResponse(
+        request,
         "ledgers/detail.html",
-        {"request": request, "ledger": snapshot},
+        {"ledger": snapshot},
     )
 
 

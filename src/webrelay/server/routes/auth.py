@@ -20,8 +20,9 @@ async def login_get(request: Request, next: str = "/chat") -> HTMLResponse:
     """Render the login form."""
     templates = request.app.state.templates
     return templates.TemplateResponse(
+        request,
         "auth/login.html",
-        {"request": request, "next": next, "error": None},
+        {"next": next, "error": None},
     )
 
 
@@ -42,9 +43,9 @@ async def login_post(
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
+        request,
         "auth/login.html",
         {
-            "request": request,
             "next": next,
             "error": "Invalid username or password.",
         },

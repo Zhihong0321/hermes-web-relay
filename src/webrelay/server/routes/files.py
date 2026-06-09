@@ -249,9 +249,9 @@ def _render_browser(
     """
     templates = request.app.state.templates
     return templates.TemplateResponse(  # type: ignore[union-attr]
+        request,
         "file_browser.html",
         {
-            "request": request,
             "path": path or "",
             "breadcrumbs": _split_segments(path),
             "error": error,
