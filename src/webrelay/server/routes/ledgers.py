@@ -48,7 +48,8 @@ async def sync_ledgers(hub: Any, session: AsyncSession) -> None:
             db_snapshots = {s.ledger_id: s for s in (await session.execute(stmt)).scalars().all()}
 
             # Deletion: remove files from DB that are no longer on the agent
-            for lid in list_snapshots := list(db_snapshots.keys()):
+            list_snapshots = list(db_snapshots.keys())
+            for lid in list_snapshots:
                 if lid not in ids:
                     await session.delete(db_snapshots[lid])
             await session.commit()

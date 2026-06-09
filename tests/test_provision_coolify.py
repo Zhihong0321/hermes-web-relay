@@ -313,6 +313,10 @@ async def test_provision_creates_project_app_and_envs(
         })
     )
 
+    mocked_httpx.patch(
+        "/api/v1/applications/99999999-9999-9999-9999-999999999999"
+    ).mock(return_value=httpx.Response(200, json={"uuid": "99999999-9999-9999-9999-999999999999"}))
+
     env_route = mocked_httpx.patch(
         "/api/v1/applications/99999999-9999-9999-9999-999999999999/envs/bulk"
     ).mock(return_value=httpx.Response(200, json={"ok": True}))

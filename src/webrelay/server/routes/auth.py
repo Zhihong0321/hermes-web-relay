@@ -9,7 +9,7 @@ import os
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Form, Request
+from fastapi import APIRouter, Form, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -31,7 +31,7 @@ async def login_post(
     username: Annotated[str, Form()],
     password: Annotated[str, Form()],
     next: Annotated[str, Form()] = "/chat",
-) -> HTMLResponse | RedirectResponse:
+) -> Response:
     """Validate credentials and create a session."""
     admin_user = os.environ.get("WEBRELAY_ADMIN_USER", "admin")
     admin_pass = os.environ.get("WEBRELAY_ADMIN_PASS", "admin")
