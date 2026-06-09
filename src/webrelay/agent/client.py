@@ -385,7 +385,11 @@ class RelayClient:
         ``file.list``, and (transitively) ``chat.send`` token-stream
         pushes.
         """
-        await self.send(envelope.op, payload, correlation_id=envelope.id)
+        reply_op = next(
+            (op for op, cls in PAYLOAD_MAP.items() if isinstance(payload, cls)),
+            envelope.op,
+        )
+        await self.send(reply_op, payload, correlation_id=envelope.id)
 
 
 __all__ = ["Handler", "RelayClient"]

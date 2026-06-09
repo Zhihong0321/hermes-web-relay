@@ -398,8 +398,8 @@ def test_respond_reuses_envelope_id() -> None:
     _run_sync(client.respond(inbound, Pong()))
     envelope, _ = parse_envelope(fake.sent[0])
     assert envelope.id == "request-7"
-    # Op is taken from the inbound envelope.
-    assert envelope.op == Op.PING
+    # Op is resolved from the payload class.
+    assert envelope.op == Op.PONG
 
 
 def test_send_build_envelope_helper_used() -> None:
